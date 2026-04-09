@@ -1,0 +1,7 @@
+.DS_Store
+.qodo/
+public/.DS_Store
+backend/.env
+backend/.env.local
+frontend/.env
+frontend/.env.local

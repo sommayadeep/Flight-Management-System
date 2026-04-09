@@ -1,0 +1,5 @@
+{
+  // Use the workspace .env file for Python terminals and tasks
+  "python.terminal.useEnvFile": true,
+  "python.envFile": "${workspaceFolder}/.env"
+}
