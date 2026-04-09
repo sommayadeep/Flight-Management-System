@@ -15,9 +15,6 @@ logger = logging.getLogger(__name__)
 # Get settings
 settings = get_settings()
 
-# Create tables
-Base.metadata.create_all(bind=engine)
-
 # Create FastAPI app
 app = FastAPI(
     title=settings.app_name,
@@ -26,6 +23,24 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url="/api/redoc",
 )
+
+
+def init_database() -> None:
+    """Create tables when enabled, without crashing service startup."""
+    if not settings.auto_create_tables:
+        logger.info("AUTO_CREATE_TABLES disabled; skipping metadata.create_all")
+        return
+
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables ensured successfully")
+    except Exception as exc:
+        logger.exception(f"Database initialization failed: {exc}")
+
+
+@app.on_event("startup")
+async def on_startup() -> None:
+    init_database()
 
 # Add SessionMiddleware (required for Authlib OAuth state)
 app.add_middleware(
