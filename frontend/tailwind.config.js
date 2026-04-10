@@ -23,7 +23,7 @@ export default {
         'slide-up': 'slideUp 0.6s ease-out',
         'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
         'plane-fly': 'planeFly 3s ease-in-out',
-        'ticker-slow': 'ticker 35s linear infinite',
+        'ticker-slow': 'ticker 300s linear infinite',
         'float-soft': 'floatSoft 14s ease-in-out infinite',
         'glimmer': 'glimmer 9s linear infinite',
       },
@@ -52,10 +52,7 @@ export default {
           '100%': { transform: 'translateX(-50%)' },
         },
       },
-      animation: {
-        ...require('tailwindcss/defaultTheme').animation,
-        'ticker-slow': 'ticker 240s linear infinite',
-      },
+      // removed duplicate animation key
         floatSoft: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-10px)' },
@@ -69,6 +66,6 @@ export default {
         xs: '2px',
       },
     },
-  },
-  plugins: [],
-}
+  }
+  plugins: []
+

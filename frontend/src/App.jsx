@@ -282,6 +282,8 @@ function App() {
       {/* HUD lines */}
       <div className="fixed top-24 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       
+      {/* Force Tailwind to include animate-ticker-slow */}
+      <div className="hidden animate-ticker-slow"></div>
       <section className="relative max-w-6xl mx-auto px-4 pb-20 pt-10 lg:pt-14">
         <Navbar 
             handleGoogleAuth={handleGoogleAuth} 
