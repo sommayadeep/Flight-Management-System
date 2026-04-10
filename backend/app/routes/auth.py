@@ -73,9 +73,8 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         expires_delta=access_token_expires
     )
 
-    # Redirect back to frontend with token as query param
-    # (In production, usually handled with a safer mechanism, but this fits the current architecture)
-    frontend_redirect_url = f"{settings.frontend_url}/auth/callback?token={access_token}"
+    # Redirect to frontend root with token query param to avoid hosting route rewrite issues.
+    frontend_redirect_url = f"{settings.frontend_url}/?token={access_token}"
     return RedirectResponse(url=frontend_redirect_url)
 
 @router.post("/google/mock", response_model=AuthResponse)
