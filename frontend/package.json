@@ -10,11 +10,14 @@
     "lint": "eslint src --ext js,jsx"
   },
   "dependencies": {
+    "@react-three/drei": "^9.109.2",
+    "@react-three/fiber": "^8.17.14",
     "axios": "^1.4.0",
     "framer-motion": "^10.16.4",
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "three": "^0.183.2"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.0.0",

@@ -11,17 +11,18 @@ import Navbar from './components/Navbar'
 import FlightSearch from './components/FlightSearch'
 import FlightList from './components/FlightList'
 import BookingModal from './components/BookingModal'
+import ImmersiveScene from './components/ImmersiveScene'
 
 const EXPERIENCE = [
-  { title: 'Live Cabin Stream', desc: 'Full-screen simulated window seat with atmospheric audio rendered in 3D space.', metric: '4K / 60fps' },
-  { title: 'Haptic-friendly UI', desc: 'Large hit targets, depth, and motion that respond to scroll velocity.', metric: '8ms latency' },
-  { title: 'Dynamic Parallax', desc: 'Layered horizons glide at different depths for real flight feel.', metric: '3-layer depth' },
+  { title: 'WebGL Flight Tunnel', desc: 'A procedural 3D corridor reacts to motion and creates depth while you browse fares.', metric: 'GPU Live' },
+  { title: 'Reactive Flight Core', desc: 'Distorted 3D geometry pulses with ambient motion to anchor the booking interface.', metric: '60 FPS' },
+  { title: 'Volumetric Particle Field', desc: 'A live starfield flows through the page to make every section feel spatial and cinematic.', metric: '1200 particles' },
 ]
 
 const TIMELINE = [
   { label: 'Discover', detail: 'Search INR fares across domestic + international partners, backed by MongoDB.', tag: 'Step 01' },
   { label: 'Verify', detail: 'Google OAuth + email verification keeps accounts trusted before purchase.', tag: 'Step 02' },
-  { label: 'Simulate', detail: 'Preview cabin lighting, ambience, and seat pitch inside the fly-through.', tag: 'Step 03' },
+  { label: 'Visualize', detail: 'The 3D scene stays active while you compare fares, seats, and booking outcomes in real time.', tag: 'Step 03' },
   { label: 'Fly Ready', detail: 'Boarding pass and lounge QR delivered with adaptive brightness.', tag: 'Step 04' },
 ]
 
@@ -42,7 +43,7 @@ const formatINR = (amount) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
 
 function App() {
-  const { user, logout: authLogout } = useAuth()
+  const { user, logout: authLogout, setShowAuthModal } = useAuth()
   const [selectedFlight, setSelectedFlight] = useState(null)
   const [showBooking, setShowBooking] = useState(false)
   const today = new Date().toISOString().slice(0, 10)
@@ -186,6 +187,11 @@ function App() {
   }
 
   const handleBookFlight = (flight) => {
+    if (!user) {
+      setShowAuthModal(true)
+      return
+    }
+
     setSelectedFlight(flight)
     setBookingForm({
       name: user?.name || '',
@@ -207,6 +213,11 @@ function App() {
 
   const handleConfirmBooking = async () => {
     if (!selectedFlight) return
+    if (!user || !localStorage.getItem('authToken')) {
+      setShowAuthModal(true)
+      setBookingStatus('Please sign in before booking your ticket.')
+      return
+    }
     if (!bookingForm.name || !bookingForm.email || !bookingForm.seat) {
       setBookingStatus('Please enter name, email, and seat.')
       return
@@ -242,6 +253,9 @@ function App() {
       loadUserBookings()
     } catch (error) {
       const detail = error.response?.data?.detail || 'Booking failed. Please retry.'
+      if (typeof detail === 'string' && detail.toLowerCase().includes('authorization header required')) {
+        setShowAuthModal(true)
+      }
       setBookingStatus(typeof detail === 'string' ? detail : 'Booking failed. Check console.')
     } finally {
       setBookingLoading(false)
@@ -257,7 +271,7 @@ function App() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0a0c11] text-white font-sans">
-      <BackgroundVideo />
+      <ImmersiveScene />
 
       {/* Interaction Gate for Audio Autoplay Policy */}
       <AnimatePresence>
@@ -291,9 +305,10 @@ function App() {
       </AnimatePresence>
 
       {/* Atmosphere overlays */}
-      <div className="fixed inset-0 pointer-events-none mix-blend-soft-light opacity-50 noise" />
-      <div className="fixed inset-x-0 top-0 h-24 bg-gradient-to-b from-amber-400/10 to-transparent blur-3xl pointer-events-none" />
-      <div className="fixed inset-x-0 bottom-0 h-32 bg-gradient-to-t from-orange-500/10 via-transparent to-transparent blur-3xl pointer-events-none" />
+      <div className="fixed inset-0 pointer-events-none mix-blend-soft-light opacity-45 noise" />
+      <div className="fixed inset-0 pointer-events-none bg-gradient-to-b from-black/35 via-[#090b14]/45 to-black/70" />
+      <div className="fixed inset-x-0 top-0 h-24 bg-gradient-to-b from-cyan-300/15 to-transparent blur-3xl pointer-events-none" />
+      <div className="fixed inset-x-0 bottom-0 h-32 bg-gradient-to-t from-rose-500/12 via-transparent to-transparent blur-3xl pointer-events-none" />
       <div className="parallax-grid" aria-hidden />
 
       {/* HUD lines */}
@@ -359,16 +374,6 @@ function App() {
     </main>
   )
 }
-
-// Inline helper components for cleaner structure
-const BackgroundVideo = () => (
-    <div className="fixed inset-0 -z-10">
-      <video className="w-full h-full object-cover opacity-90" autoPlay loop muted playsInline>
-        <source src="/flight-bg.mp4" type="video/mp4" />
-      </video>
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-[#120b0b]/40 to-[#0a0c11]/90" />
-    </div>
-)
 
 const Hero = () => (
     <div className="space-y-6">
