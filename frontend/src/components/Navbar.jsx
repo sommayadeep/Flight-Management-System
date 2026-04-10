@@ -1,7 +1,7 @@
 import React from 'react'
-import { Plane, Volume2, VolumeX, Play } from 'lucide-react'
+import { Plane, Volume2, VolumeX } from 'lucide-react'
 
-const Navbar = ({ handleGoogleAuth, toggleSound, isMuted, startCinematic, user, logout }) => {
+const Navbar = ({ handleGoogleAuth, toggleSound, isMuted, user, logout }) => {
   return (
     <div className="flex items-center justify-between gap-4 mb-10">
       <div className="flex items-center gap-3">
@@ -45,14 +45,6 @@ const Navbar = ({ handleGoogleAuth, toggleSound, isMuted, startCinematic, user, 
         >
           {isMuted ? <VolumeX className="w-4 h-4 text-slate-300" /> : <Volume2 className="w-4 h-4 text-amber-100" />}
           <span className="text-sm text-slate-200">{isMuted ? 'Sound Off' : 'Sound On'}</span>
-        </button>
-        <button
-          onClick={startCinematic}
-          className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-400 hover:to-rose-400 shadow-lg shadow-amber-900/50 transition"
-        >
-          <Play className="w-4 h-4" />
-          <span className="text-sm font-semibold">Start Cinematic</span>
-          <span className="w-2 h-2 rounded-full bg-white animate-ping" />
         </button>
       </div>
     </div>
