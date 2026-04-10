@@ -51,6 +51,11 @@ export default {
           '0%': { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-50%)' },
         },
+      },
+      animation: {
+        ...require('tailwindcss/defaultTheme').animation,
+        'ticker-slow': 'ticker 240s linear infinite',
+      },
         floatSoft: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-10px)' },

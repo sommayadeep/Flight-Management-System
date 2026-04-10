@@ -14,7 +14,9 @@ logger = logging.getLogger(__name__)
 
 # Get settings
 settings = get_settings()
-is_secure_frontend = str(settings.frontend_url).startswith("https://")
+
+# Create tables
+Base.metadata.create_all(bind=engine)
 
 # Create FastAPI app
 app = FastAPI(
@@ -25,31 +27,13 @@ app = FastAPI(
     redoc_url="/api/redoc",
 )
 
-
-def init_database() -> None:
-    """Create tables when enabled, without crashing service startup."""
-    if not settings.auto_create_tables:
-        logger.info("AUTO_CREATE_TABLES disabled; skipping metadata.create_all")
-        return
-
-    try:
-        Base.metadata.create_all(bind=engine)
-        logger.info("Database tables ensured successfully")
-    except Exception as exc:
-        logger.exception(f"Database initialization failed: {exc}")
-
-
-@app.on_event("startup")
-async def on_startup() -> None:
-    init_database()
-
 # Add SessionMiddleware (required for Authlib OAuth state)
 app.add_middleware(
     SessionMiddleware, 
     secret_key=settings.secret_key,
     session_cookie="fms_session",
-    same_site="none" if is_secure_frontend else "lax",
-    https_only=is_secure_frontend
+    same_site="lax",
+    https_only=False
 )
 
 # Add CORS middleware
@@ -95,11 +79,9 @@ async def root():
 async def global_exception_handler(request, exc):
     """Global exception handler"""
     logger.error(f"Unhandled exception: {str(exc)}")
-    import traceback
-    traceback.print_exc()
     return JSONResponse(
         status_code=500,
-        content={"detail": str(exc)}
+        content={"detail": "Internal server error"}
     )
 
 if __name__ == "__main__":

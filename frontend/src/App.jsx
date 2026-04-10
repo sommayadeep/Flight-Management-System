@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, Play } from 'lucide-react'
 import { bookingAPI, flightAPI } from './utils/api'
 import SoundManager from './utils/SoundManager'
 import { useAuth } from './contexts/AuthContext'
@@ -11,18 +11,18 @@ import Navbar from './components/Navbar'
 import FlightSearch from './components/FlightSearch'
 import FlightList from './components/FlightList'
 import BookingModal from './components/BookingModal'
-import ImmersiveScene from './components/ImmersiveScene'
+import CinematicOverlay from './components/CinematicOverlay'
 
 const EXPERIENCE = [
-  { title: 'WebGL Flight Tunnel', desc: 'A procedural 3D corridor reacts to motion and creates depth while you browse fares.', metric: 'GPU Live' },
-  { title: 'Reactive Flight Core', desc: 'Distorted 3D geometry pulses with ambient motion to anchor the booking interface.', metric: '60 FPS' },
-  { title: 'Volumetric Particle Field', desc: 'A live starfield flows through the page to make every section feel spatial and cinematic.', metric: '1200 particles' },
+  { title: 'Live Cabin Stream', desc: 'Full-screen simulated window seat with atmospheric audio rendered in 3D space.', metric: '4K / 60fps' },
+  { title: 'Haptic-friendly UI', desc: 'Large hit targets, depth, and motion that respond to scroll velocity.', metric: '8ms latency' },
+  { title: 'Dynamic Parallax', desc: 'Layered horizons glide at different depths for real flight feel.', metric: '3-layer depth' },
 ]
 
 const TIMELINE = [
   { label: 'Discover', detail: 'Search INR fares across domestic + international partners, backed by MongoDB.', tag: 'Step 01' },
   { label: 'Verify', detail: 'Google OAuth + email verification keeps accounts trusted before purchase.', tag: 'Step 02' },
-  { label: 'Visualize', detail: 'The 3D scene stays active while you compare fares, seats, and booking outcomes in real time.', tag: 'Step 03' },
+  { label: 'Simulate', detail: 'Preview cabin lighting, ambience, and seat pitch inside the fly-through.', tag: 'Step 03' },
   { label: 'Fly Ready', detail: 'Boarding pass and lounge QR delivered with adaptive brightness.', tag: 'Step 04' },
 ]
 
@@ -43,7 +43,7 @@ const formatINR = (amount) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount)
 
 function App() {
-  const { user, logout: authLogout, setShowAuthModal } = useAuth()
+  const { user, login, logout: authLogout } = useAuth()
   const [selectedFlight, setSelectedFlight] = useState(null)
   const [showBooking, setShowBooking] = useState(false)
   const today = new Date().toISOString().slice(0, 10)
@@ -64,9 +64,7 @@ function App() {
   })
   const [bookingLoading, setBookingLoading] = useState(false)
   const [bookingStatus, setBookingStatus] = useState(null)
-  const [myBookings, setMyBookings] = useState([])
-  const [bookingsLoading, setBookingsLoading] = useState(false)
-  const [bookingsError, setBookingsError] = useState('')
+  const [isCinematicOpen, setIsCinematicOpen] = useState(false)
   const [isAudioUnlocked, setIsAudioUnlocked] = useState(false)
   
   // Track if we need an interaction gate after OAuth
@@ -111,30 +109,6 @@ function App() {
     fetchFlights(filters, true)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  useEffect(() => {
-    if (user) {
-      loadUserBookings()
-    } else {
-      setMyBookings([])
-      setBookingsError('')
-    }
-  }, [user])
-
-  const loadUserBookings = async () => {
-    if (!user) return
-    setBookingsLoading(true)
-    setBookingsError('')
-    try {
-      const response = await bookingAPI.getMyBookings()
-      const list = Array.isArray(response.data?.bookings) ? response.data.bookings : []
-      setMyBookings(list)
-    } catch (error) {
-      setBookingsError('Could not load your bookings right now.')
-    } finally {
-      setBookingsLoading(false)
-    }
-  }
 
   const fetchFlights = async (query, silent = false) => {
     setFlightError('')
@@ -181,17 +155,21 @@ function App() {
     if (next) SoundManager.stopAmbience()
   }
 
+  const startCinematic = () => {
+    setIsCinematicOpen(true)
+    if (isMuted) {
+      const next = SoundManager.toggleMute()
+      setIsMuted(next)
+    }
+    SoundManager.play('engineStartup')
+  }
+
   const handleGoogleAuth = () => {
     const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
     window.location.href = `${base}/api/auth/google`
   }
 
   const handleBookFlight = (flight) => {
-    if (!user) {
-      setShowAuthModal(true)
-      return
-    }
-
     setSelectedFlight(flight)
     setBookingForm({
       name: user?.name || '',
@@ -213,11 +191,6 @@ function App() {
 
   const handleConfirmBooking = async () => {
     if (!selectedFlight) return
-    if (!user || !localStorage.getItem('authToken')) {
-      setShowAuthModal(true)
-      setBookingStatus('Please sign in before booking your ticket.')
-      return
-    }
     if (!bookingForm.name || !bookingForm.email || !bookingForm.seat) {
       setBookingStatus('Please enter name, email, and seat.')
       return
@@ -250,12 +223,8 @@ function App() {
       const ref = res.data?.booking_id || res.data?.id || 'BOOKED'
       SoundManager.play('readyToDepart')
       setBookingStatus(`Booking confirmed · Ref ${ref}`)
-      loadUserBookings()
     } catch (error) {
       const detail = error.response?.data?.detail || 'Booking failed. Please retry.'
-      if (typeof detail === 'string' && detail.toLowerCase().includes('authorization header required')) {
-        setShowAuthModal(true)
-      }
       setBookingStatus(typeof detail === 'string' ? detail : 'Booking failed. Check console.')
     } finally {
       setBookingLoading(false)
@@ -271,7 +240,7 @@ function App() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0a0c11] text-white font-sans">
-      <ImmersiveScene />
+      <BackgroundVideo />
 
       {/* Interaction Gate for Audio Autoplay Policy */}
       <AnimatePresence>
@@ -305,10 +274,9 @@ function App() {
       </AnimatePresence>
 
       {/* Atmosphere overlays */}
-      <div className="fixed inset-0 pointer-events-none mix-blend-soft-light opacity-45 noise" />
-      <div className="fixed inset-0 pointer-events-none bg-gradient-to-b from-black/35 via-[#090b14]/45 to-black/70" />
-      <div className="fixed inset-x-0 top-0 h-24 bg-gradient-to-b from-cyan-300/15 to-transparent blur-3xl pointer-events-none" />
-      <div className="fixed inset-x-0 bottom-0 h-32 bg-gradient-to-t from-rose-500/12 via-transparent to-transparent blur-3xl pointer-events-none" />
+      <div className="fixed inset-0 pointer-events-none mix-blend-soft-light opacity-50 noise" />
+      <div className="fixed inset-x-0 top-0 h-24 bg-gradient-to-b from-amber-400/10 to-transparent blur-3xl pointer-events-none" />
+      <div className="fixed inset-x-0 bottom-0 h-32 bg-gradient-to-t from-orange-500/10 via-transparent to-transparent blur-3xl pointer-events-none" />
       <div className="parallax-grid" aria-hidden />
 
       {/* HUD lines */}
@@ -319,6 +287,7 @@ function App() {
             handleGoogleAuth={handleGoogleAuth} 
             toggleSound={toggleSound} 
             isMuted={isMuted} 
+            startCinematic={startCinematic} 
             user={user}
             logout={authLogout}
         />
@@ -347,15 +316,8 @@ function App() {
           statusTone={statusTone}
         />
 
-        <MyBookingsSection
-          user={user}
-          bookings={myBookings}
-          loading={bookingsLoading}
-          error={bookingsError}
-          onRefresh={loadUserBookings}
-        />
-
         <ExperienceSection />
+        <SimulationSection startCinematic={startCinematic} />
         <TimelineSection />
       </section>
 
@@ -371,9 +333,26 @@ function App() {
         formatINR={formatINR}
         user={user}
       />
+
+      <CinematicOverlay 
+        isOpen={isCinematicOpen}
+        onClose={() => setIsCinematicOpen(false)}
+        isMuted={isMuted}
+        toggleMute={toggleSound}
+      />
     </main>
   )
 }
+
+// Inline helper components for cleaner structure
+const BackgroundVideo = () => (
+    <div className="fixed inset-0 -z-10">
+      <video className="w-full h-full object-cover opacity-90" autoPlay loop muted playsInline>
+        <source src="/flight-bg.mp4" type="video/mp4" />
+      </video>
+      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-[#120b0b]/40 to-[#0a0c11]/90" />
+    </div>
+)
 
 const Hero = () => (
     <div className="space-y-6">
@@ -419,54 +398,19 @@ const ExperienceSection = () => (
     </div>
 )
 
-const MyBookingsSection = ({ user, bookings, loading, error, onRefresh }) => (
-  <div className="mt-16 rounded-3xl border border-white/10 bg-white/5 p-6">
-    <div className="flex items-center justify-between gap-4">
-      <div>
-        <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Booking Center</p>
-        <h3 className="text-2xl font-semibold text-white">My Tickets</h3>
-      </div>
-      {user && (
-        <button
-          onClick={onRefresh}
-          className="px-4 py-2 rounded-xl bg-white/10 border border-white/10 hover:border-sky-400/50 text-sm"
-        >
-          Refresh
-        </button>
-      )}
+const SimulationSection = ({ startCinematic }) => (
+    <div className="mt-16 p-8 rounded-3xl bg-white/5 border border-white/10 flex flex-col md:flex-row gap-8 items-center">
+        <div className="flex-1 space-y-4">
+            <h3 className="text-3xl font-semibold">Full-screen simulation</h3>
+            <p className="text-slate-300">Experience the flight before you book with our 3D cabin simulation.</p>
+            <button onClick={startCinematic} className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-sky-500 font-semibold">
+                <Play className="w-4 h-4" /> Launch Simulation
+            </button>
+        </div>
+        <div className="flex-1 w-full aspect-video rounded-2xl overflow-hidden border border-white/10">
+            <video src="/flight-bg.mp4" autoPlay muted loop className="w-full h-full object-cover" />
+        </div>
     </div>
-
-    {!user && (
-      <p className="mt-4 text-slate-300 text-sm">Sign in to view and track your bookings.</p>
-    )}
-
-    {user && loading && (
-      <p className="mt-4 text-slate-300 text-sm">Loading your bookings...</p>
-    )}
-
-    {user && error && (
-      <p className="mt-4 text-rose-200 text-sm">{error}</p>
-    )}
-
-    {user && !loading && bookings.length === 0 && !error && (
-      <p className="mt-4 text-slate-300 text-sm">No bookings yet. Reserve a seat to see it here.</p>
-    )}
-
-    {user && bookings.length > 0 && (
-      <div className="mt-5 grid sm:grid-cols-2 gap-4">
-        {bookings.map((booking) => (
-          <div key={booking.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Ref {booking.booking_reference}</p>
-            <p className="mt-2 text-white font-semibold">
-              {booking.flight?.source || '—'} to {booking.flight?.destination || '—'}
-            </p>
-            <p className="text-sm text-slate-300 mt-1">Seat {booking.seat_number} • {booking.cabin_class}</p>
-            <p className="text-sm text-slate-400 mt-1">Status: {booking.status}</p>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
 )
 
 const TimelineSection = () => (

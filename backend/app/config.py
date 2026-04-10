@@ -10,7 +10,6 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = "postgresql://user:password@localhost:5432/flight_management"
-    auto_create_tables: bool = True
     
     # JWT
     secret_key: str = "your-secret-key-change-this-in-production"
