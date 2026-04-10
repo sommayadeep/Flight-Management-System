@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 # Get settings
 settings = get_settings()
+is_secure_frontend = str(settings.frontend_url).startswith("https://")
 
 # Create FastAPI app
 app = FastAPI(
@@ -47,8 +48,8 @@ app.add_middleware(
     SessionMiddleware, 
     secret_key=settings.secret_key,
     session_cookie="fms_session",
-    same_site="lax",
-    https_only=False
+    same_site="none" if is_secure_frontend else "lax",
+    https_only=is_secure_frontend
 )
 
 # Add CORS middleware
