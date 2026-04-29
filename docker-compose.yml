@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./flights.db
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    volumes:
+      - ./backend/flights.db:/app/flights.db
+    networks:
+      - flight-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://backend:8000/api
+    depends_on:
+      - backend
+    networks:
+      - flight-network
+    command: npm run dev
+
+networks:
+  flight-network:
+    driver: bridge
