@@ -21,4 +21,4 @@ EXPOSE 3000
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Run the application
-CMD ["npm", "run", "dev"]
+CMD ["sh", "-c", "npm run start -- -p ${PORT:-3000}"]
